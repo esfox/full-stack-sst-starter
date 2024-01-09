@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BaseFormComponent } from '../../../../components/base-form/base-form.component';
-import { RolesService } from '../../../../services/roles.service';
+import { RolesService } from '../../../../services/_roles.service';
 import { UsersService } from '../../../../services/users.service';
 import { RoleType } from '../../../../types';
 

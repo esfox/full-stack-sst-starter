@@ -1,14 +1,13 @@
 import { Injectable } from '@angular/core';
 import { PermissionType } from '../types';
-import { ApiService } from './api.service';
-import { ResourceService } from './resource.service';
+import { ApiService } from './_api.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class PermissionsService extends ResourceService<PermissionType> {
+export class PermissionsService extends ApiService<PermissionType> {
   constructor() {
-    const apiService = new ApiService<PermissionType>({
+    super({
       basePath: '/permissions',
       dataMapping: [
         { apiField: 'id', mappedField: 'id' },
@@ -18,7 +17,5 @@ export class PermissionsService extends ResourceService<PermissionType> {
         { apiField: 'deleted_at', mappedField: 'deletedAt' },
       ],
     });
-
-    super(apiService);
   }
 }

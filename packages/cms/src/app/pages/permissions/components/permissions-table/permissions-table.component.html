@@ -1,0 +1,68 @@
+<app-navbar>
+  <ng-container title>Permissions</ng-container>
+  <ng-container nav-content>
+    <button class="btn btn-primary min-h-0 h-9 ml-auto" routerLink="add" routerLinkActive="hidden">
+      <i class="fa fa-plus"></i>
+      Add Permission
+    </button>
+  </ng-container>
+</app-navbar>
+
+@if (isLoading()) {
+  <span class="loading loading-spinner loading-lg block mx-auto my-24"></span>
+} @else if (loadRecordsError) {
+  <div class="text-error text-center font-medium py-4">{{ loadRecordsError }}</div>
+} @else {
+  <table class="table mb-28">
+    <thead>
+      <tr
+        class="sticky top-[var(--navbar-height)] bg-base-100 border-b-0 shadow-[inset_0_-1px_0_oklch(var(--b2))] z-[2]"
+      >
+        <!-- TODO: Change table headers as needed -->
+        <th>Name</th>
+
+        <th>Created at</th>
+
+        <th>Updated at</th>
+
+        <th>Deleted at</th>
+
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (permission of records(); track $index) {
+        <app-permissions-table-row
+          [permission]="permission"
+          [alt-bg]="$index % 2 === 0"
+          (edit)="edit(permission)"
+          (delete)="showDeletePrompt(permission)"
+        />
+      }
+    </tbody>
+  </table>
+
+  <app-prompt-dialog
+    #deletePromptDialog
+    title="Confirm Delete"
+    [danger-confirm]="true"
+    [disabled]="isDeleting()"
+    (confirm)="deleteRecord()"
+  >
+    <p class="px-6 py-4">
+      Are you sure you want to delete the permission:
+      <strong>{{ recordToDeleteLabel() }}</strong> ?
+    </p>
+    @if (deleteRecordError) {
+      <div class="text-error text-center font-medium">{{ deleteRecordError }}</div>
+    }
+    <ng-container dialog-confirm>
+      @if (isDeleting()) {
+        <span class="loading loading-spinner"></span>
+        Deleting...
+      } @else {
+        Delete
+      }
+    </ng-container>
+  </app-prompt-dialog>
+}

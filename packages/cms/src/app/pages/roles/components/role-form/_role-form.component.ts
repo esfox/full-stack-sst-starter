@@ -1,38 +1,39 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  BaseFormNewComponent,
-  injectionTokens,
-} from '../../../../components/base-form-new/base-form-new.component';
-import { NavbarComponent } from '../../../../components/navbar/navbar.component';
-import { RolesService } from '../../../../services/roles.service';
+import { BaseFormComponent } from '../../../../components/base-form/base-form.component';
+import { PermissionsService } from '../../../../services/_permissions.service';
+import { RolesService } from '../../../../services/_roles.service';
 import { PermissionType, RoleType } from '../../../../types';
-import { PermissionsService } from '../../../../services/permissions.service';
 
 @Component({
   selector: 'app-role-form',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, FormsModule],
-  templateUrl: './role-form.component.html',
+  imports: [CommonModule, FormsModule],
+  templateUrl: './_role-form.component.html',
   styleUrl: './role-form.component.scss',
-  providers: [{ provide: injectionTokens.service, useExisting: RolesService }],
 })
-export class RoleFormComponent extends BaseFormNewComponent<RoleType> {
-  rolesService = inject(RolesService);
+export class RoleFormComponent extends BaseFormComponent {
   permissionsService = inject(PermissionsService);
+  rolesService = inject(RolesService);
 
-  selectedPermissions: PermissionType[] = [];
+  isLoadingPermissionOptions = this.permissionsService.isLoading;
   isLoadingPermissions = false;
-  isLoadingPermissionOptions = this.permissionsService.isLoadingRecords;
+  selectedPermissions: PermissionType[] = [];
 
-  override isSaving = this.rolesService.isSavingWithPermissions;
+  override save() {
+    this.onSave.emit({ role: this.form.value, permissions: Array.from(this.selectedPermissions) });
+  }
 
-  override async setValues() {
+  override reset() {
+    super.reset();
     this.selectedPermissions = [];
-    super.setValues();
+  }
 
-    const role = this.recordToEdit();
+  override async setValues(role: Partial<RoleType>) {
+    this.selectedPermissions = [];
+    super.setValues(role);
+
     if (!role || !role.id) {
       return;
     }
@@ -47,30 +48,9 @@ export class RoleFormComponent extends BaseFormNewComponent<RoleType> {
     this.selectedPermissions = [...permissions];
   }
 
-  override async save() {
-    const { error } = await this.rolesService.saveWithPermissions({
-      role: this.form.value,
-      permissions: Array.from(this.selectedPermissions),
-    });
-
-    if (!error) {
-      this.location.back();
-      await this.service.loadRecords();
-    }
-
-    if (error?.status === 403) {
-      this.error = 'Not allowed to save';
-    }
-  }
-
   getPermissionOptions() {
-    const permissions = this.permissionsService.records();
-    if (!permissions) {
-      return [];
-    }
-
     const permissionOptions = [];
-    for (const permission of permissions) {
+    for (const permission of this.permissionsService.records()) {
       if (!this.selectedPermissions.some(selected => selected.id === permission.id)) {
         permissionOptions.push(permission);
       }

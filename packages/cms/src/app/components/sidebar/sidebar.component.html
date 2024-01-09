@@ -10,7 +10,7 @@
         class="p-3"
         routerLinkActive="active"
         [routerLink]="[item.path]"
-        [routerLinkActiveOptions]="{ exact: true }"
+        [routerLinkActiveOptions]="{ exact: item.path === '/' }"
       >
         @if (item.icon) {
           <i class="text-center w-5" [class]="item.icon"></i>

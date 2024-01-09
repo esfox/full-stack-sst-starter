@@ -1,3 +1,8 @@
+export type ApiServiceResult<T = unknown> = {
+  response: Response;
+  data?: T;
+};
+
 export type UserType = {
   id: string;
   email: string;

@@ -1,13 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { PermissionType, RoleType } from '../types';
-import { ApiService, RecordsResponse } from './api.service';
-import { PermissionsService } from './permissions.service';
-import { ResourceService } from './resource.service';
+import { ApiServiceResult, PermissionType, RoleType } from '../types';
+import { ApiService, RecordsResponse } from './_api.service';
+import { PermissionsService } from './_permissions.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class RolesService extends ResourceService<RoleType> {
+export class RolesService extends ApiService<RoleType> {
   private permissionsService = inject(PermissionsService);
 
   rolePermissionsMap: { [roleId: string]: PermissionType[] } = {};
@@ -15,7 +14,7 @@ export class RolesService extends ResourceService<RoleType> {
   isSavingWithPermissions = signal(false);
 
   constructor() {
-    const apiService = new ApiService<RoleType>({
+    super({
       basePath: '/roles',
       dataMapping: [
         { apiField: 'id', mappedField: 'id' },
@@ -25,26 +24,10 @@ export class RolesService extends ResourceService<RoleType> {
         { apiField: 'deleted_at', mappedField: 'deletedAt' },
       ],
     });
-
-    super(apiService);
-
-    this.apiService = apiService;
-  }
-
-  override async initEditRecordForm(recordId?: string | undefined) {
-    const initResult = await super.initEditRecordForm(recordId);
-
-    if (this.permissionsService.records()?.length) {
-      return initResult;
-    }
-
-    await this.permissionsService.loadRecords();
-
-    return initResult;
   }
 
   private getRolePermissionsUrl(roleId: string) {
-    return `${this.apiService.url}/${roleId}/permissions`;
+    return `${this.url}/${roleId}/permissions`;
   }
 
   async getPermissions(roleId: string) {
@@ -54,7 +37,7 @@ export class RolesService extends ResourceService<RoleType> {
     }
 
     let permissionRecords;
-    const response = await this.apiService.fetch(this.getRolePermissionsUrl(roleId));
+    const response = await this.fetch(this.getRolePermissionsUrl(roleId));
     const { records }: RecordsResponse = await response.json();
     permissionRecords = records;
 
@@ -62,9 +45,7 @@ export class RolesService extends ResourceService<RoleType> {
       return;
     }
 
-    permissions = permissionRecords.map(record =>
-      this.permissionsService.apiService.mapFromApi(record)
-    );
+    permissions = permissionRecords.map(record => this.permissionsService.mapFromApi(record));
     if (!this.rolePermissionsMap[roleId]) {
       this.rolePermissionsMap[roleId] = permissions;
     }
@@ -77,29 +58,26 @@ export class RolesService extends ResourceService<RoleType> {
     permissions: PermissionType[];
     roleId?: string;
   }) {
-    debugger;
-    this.saveRecordError.set(undefined);
-
     const { role, permissions, roleId } = data;
 
     this.isSavingWithPermissions.set(true);
 
-    const savedRoleResult = await this.apiService.save(role, roleId);
-    if (!savedRoleResult.response.ok || !savedRoleResult.data) {
-      return { error: savedRoleResult.response };
+    let result: ApiServiceResult<RoleType>;
+    if (roleId) {
+      result = await this.edit(roleId, role);
+    } else {
+      result = await this.create(role);
     }
 
-    const savedRoleId = savedRoleResult.data.id;
+    if (!result.data) {
+      return;
+    }
+
+    const savedRoleId = result.data.id;
     const permissionIds = permissions.map(permission => permission.id);
-    await this.apiService.fetchWithBody(
-      this.getRolePermissionsUrl(savedRoleId),
-      'PUT',
-      permissionIds
-    );
+    await this.fetchWithBody(this.getRolePermissionsUrl(savedRoleId), 'PUT', permissionIds);
 
     this.isSavingWithPermissions.set(false);
     delete this.rolePermissionsMap[savedRoleId];
-
-    return { data: savedRoleResult.data };
   }
 }

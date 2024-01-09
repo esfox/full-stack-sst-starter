@@ -1,59 +1,73 @@
-<form #form="ngForm" id="role-form" class="px-6 pt-2" (ngSubmit)="save()" ngNativeValidate>
-  <label class="form-control w-full">
-    <div class="label">
-      <span class="label-text">Name</span>
-    </div>
-    <input type="text" class="input input-bordered w-full" name="name" required ngModel />
-  </label>
+@if (isLoading()) {
+  <span class="loading loading-spinner loading-lg block mx-auto my-24"></span>
+}
 
-  <label class="form-control w-full">
-    <div class="label">
-      <span class="label-text">Permissions</span>
-    </div>
+<!-- Reason why this is only hidden when loading is because the form has to be rendered immediately -->
+<div [class]="{ hidden: isLoading() }">
+  <app-navbar>
+    <ng-container title>
+      <button class="btn btn-ghost btn-sm mr-2" (click)="cancel()">
+        <i class="fa fa-chevron-left fa-lg"></i>
+      </button>
+      {{ navTitle }}
+    </ng-container>
+  </app-navbar>
 
-    @if (isLoadingPermissionOptions() || isLoadingPermissions) {
-      <span class="loading loading-spinner mx-auto my-2"></span>
-    } @else {
-      <select class="select select-bordered join-item w-full" (change)="addPermission($event)">
-        <option selected disabled value="">Select permission to add</option>
-        @for (permission of getPermissionOptions(); track $index) {
-          <option [value]="permission.id">{{ permission.name }}</option>
-        }
-      </select>
-    }
-  </label>
-  <ul class="flex flex-wrap gap-2 mt-3">
-    @if (!isLoadingPermissionOptions() && !isLoadingPermissions) {
-      @for (permission of selectedPermissions; track $index) {
-        <li>
-          <button
-            type="button"
-            class="btn btn-sm p-0 min-h-2"
-            (click)="removePermission(permission)"
-          >
-            <span class="px-3 py-2 mb-[2px] border-r border-base-300">{{ permission.name }}</span>
-            <i class="fa fa-xmark fa-xs pe-2 opacity-50"></i>
-          </button>
-        </li>
-      }
-    }
-  </ul>
+  <form #form="ngForm" id="role-form" class="px-16 pt-6" (ngSubmit)="save()" ngNativeValidate>
+    <label class="form-control w-full">
+      <div class="label">
+        <span class="label-text">Name</span>
+      </div>
+      <input type="text" class="input input-bordered w-full" name="name" required ngModel />
+    </label>
 
-  <div class="flex justify-end gap-2 py-6">
-    <form method="dialog">
-      <button class="btn" [disabled]="isLoading">Cancel</button>
-    </form>
-    <button
-      type="submit"
-      class="btn btn-primary"
-      [disabled]="isLoading || isLoadingPermissionOptions()"
-    >
-      @if (isLoading) {
-        <span class="loading loading-spinner"></span>
-        Saving...
+    <label class="form-control w-full">
+      <div class="label">
+        <span class="label-text">Permissions</span>
+      </div>
+
+      @if (isLoadingPermissionOptions() || isLoadingPermissions) {
+        <span class="loading loading-spinner mx-auto my-2"></span>
       } @else {
-        Save
+        <select class="select select-bordered join-item w-full" (change)="addPermission($event)">
+          <option selected disabled value="">Select permission to add</option>
+          @for (permission of getPermissionOptions(); track $index) {
+            <option [value]="permission.id">{{ permission.name }}</option>
+          }
+        </select>
       }
-    </button>
-  </div>
-</form>
+    </label>
+    <ul class="flex flex-wrap gap-2 mt-3">
+      @if (!isLoadingPermissionOptions() && !isLoadingPermissions) {
+        @for (permission of selectedPermissions; track $index) {
+          <li>
+            <button
+              type="button"
+              class="btn btn-sm p-0 min-h-2"
+              (click)="removePermission(permission)"
+            >
+              <span class="px-3 py-2 mb-[2px] border-r border-base-300">{{ permission.name }}</span>
+              <i class="fa fa-xmark fa-xs pe-2 opacity-50"></i>
+            </button>
+          </li>
+        }
+      }
+    </ul>
+
+    <div class="flex justify-end gap-2 py-6">
+      <button type="button" class="btn" [disabled]="isSaving()" (click)="cancel()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="isSaving()">
+        @if (isSaving()) {
+          <span class="loading loading-spinner"></span>
+          Saving...
+        } @else {
+          Save
+        }
+      </button>
+    </div>
+  </form>
+</div>
+
+@if (error) {
+  <div class="text-error text-center font-medium py-4">{{ error }}</div>
+}

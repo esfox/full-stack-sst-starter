@@ -1,12 +1,6 @@
 <div class="drawer md:drawer-open">
   <input id="sidebar" type="checkbox" class="drawer-toggle" />
   <main class="drawer-content">
-    @if (!noNavbar) {
-      <app-navbar>
-        <ng-content title select="[nav-title]" />
-        <ng-content select="[nav-content]" />
-      </app-navbar>
-    }
     <ng-content />
   </main>
 

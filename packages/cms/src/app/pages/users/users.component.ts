@@ -7,7 +7,7 @@ import {
 import { DialogComponent } from '../../components/dialog/dialog.component';
 import { PromptDialogComponent } from '../../components/prompt-dialog/prompt-dialog.component';
 import { MainLayoutComponent } from '../../layouts/main-layout/main-layout.component';
-import { RolesService } from '../../services/roles.service';
+import { RolesService } from '../../services/_roles.service';
 import { UsersService } from '../../services/users.service';
 import { RoleType, UserType } from '../../types';
 import { UserFormComponent } from './components/user-form/user-form.component';
@@ -26,10 +26,7 @@ import { UsersTableRowComponent } from './components/users-table-row/users-table
   ],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
-  providers: [
-    { provide: injectionTokens.service, useExisting: UsersService },
-    { provide: injectionTokens.getId, useValue: (user: UserType) => user.id },
-  ],
+  providers: [{ provide: injectionTokens.service, useExisting: UsersService }],
 })
 export class UsersComponent extends BaseResourceComponent<UserType> implements OnInit {
   rolesService = inject(RolesService);
@@ -39,6 +36,10 @@ export class UsersComponent extends BaseResourceComponent<UserType> implements O
   recordToDeleteEmail = computed(() => this.recordToDelete()?.email);
 
   isSavingWithRoles = this.usersService.isSavingWithRoles;
+
+  override getRecordId(record: Partial<UserType>) {
+    return record.id;
+  }
 
   async saveWithRoles(data: { user: Partial<RoleType>; roles: RoleType[] }) {
     const { user, roles } = data;

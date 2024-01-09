@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { RoleType, UserType } from '../types';
-import { ApiService, RecordResponse, RecordsResponse } from './api.service';
-import { RolesService } from './roles.service';
+import { ApiServiceResult, RoleType, UserType } from '../types';
+import { ApiService, RecordResponse, RecordsResponse } from './_api.service';
+import { RolesService } from './_roles.service';
 
 @Injectable({
   providedIn: 'root',
@@ -85,14 +85,18 @@ export class UsersService extends ApiService<UserType> {
 
     this.isSavingWithRoles.set(true);
 
-    let savedUser;
+    let result: ApiServiceResult<UserType>;
     if (userId) {
-      savedUser = await this.edit(userId, user);
+      result = await this.edit(userId, user);
     } else {
-      savedUser = await this.create(user);
+      result = await this.create(user);
     }
 
-    const savedUserId = savedUser.id;
+    if (!result.data) {
+      return;
+    }
+
+    const savedUserId = result.data.id;
     const roleIds = roles.map(role => role.id);
     await this.fetchWithBody(this.getUserRolesUrl(savedUserId), 'PUT', roleIds);
 

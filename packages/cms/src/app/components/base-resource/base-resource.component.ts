@@ -1,14 +1,14 @@
 // TODO: HANDLE ERRORS!
 import { CommonModule } from '@angular/common';
-import { Component, InjectionToken, ViewChild, inject } from '@angular/core';
-import { ApiService } from '../../services/api.service';
+import { Component, InjectionToken, ViewChild, computed, inject } from '@angular/core';
+import { ApiService } from '../../services/_api.service';
+import { ApiServiceResult } from '../../types';
 import { BaseFormComponent } from '../base-form/base-form.component';
 import { DialogComponent } from '../dialog/dialog.component';
 import { PromptDialogComponent } from '../prompt-dialog/prompt-dialog.component';
 
 export const injectionTokens = {
   service: new InjectionToken<ApiService<unknown>>('service'),
-  getId: new InjectionToken('getId'),
 };
 
 @Component({
@@ -23,10 +23,17 @@ export class BaseResourceComponent<DataType = any> {
   @ViewChild('recordForm') recordForm!: BaseFormComponent;
 
   protected service = inject<ApiService<DataType>>(injectionTokens.service);
-  protected getId = inject<(record: Partial<DataType>) => string>(injectionTokens.getId);
 
   records = this.service.records;
   isLoading = this.service.isLoading;
+  loadRecordsError = computed(() => {
+    const error = this.service.loadRecordsError();
+    if (error?.status === 403) {
+      return 'Not allowed to view';
+    }
+
+    return;
+  });
 
   recordToSave = this.service.recordToSave;
   isSaving = this.service.isSaving;
@@ -34,13 +41,12 @@ export class BaseResourceComponent<DataType = any> {
   recordToDelete = this.service.recordToDelete;
   isDeleting = this.service.isDeleting;
 
+  getRecordId(record: Partial<DataType>) {
+    return (record as any).id;
+  }
+
   async ngOnInit() {
-    try {
-      await this.service.get();
-    } catch (error) {
-      //  TODO: handle error
-      console.error(error);
-    }
+    await this.service.get();
   }
 
   showRecordForm(record?: Partial<DataType>) {
@@ -62,25 +68,22 @@ export class BaseResourceComponent<DataType = any> {
   async saveRecord(data: Partial<DataType>) {
     const recordToSave = this.recordToSave();
 
-    let savedRecord;
-    try {
-      if (recordToSave) {
-        const id = this.getId(recordToSave);
-        savedRecord = await this.service.edit(id, data);
-      } else {
-        savedRecord = await this.service.create(data);
-      }
-    } catch (error) {
-      //  TODO: handle error
-      console.error(error);
-      return;
+    let result: ApiServiceResult<DataType>;
+    if (recordToSave) {
+      const id = this.getRecordId(recordToSave);
+      result = await this.service.edit(id, data);
+    } else {
+      result = await this.service.create(data);
     }
 
-    this.recordFormDialog.hide();
-    this.recordForm.reset();
-    this.service.get();
+    this.isSaving.set(false);
 
-    return savedRecord;
+    const { response } = result;
+    if (response.ok) {
+      this.recordFormDialog.hide();
+      this.recordForm.reset();
+      this.service.get();
+    }
   }
 
   async deleteRecord() {
@@ -89,20 +92,17 @@ export class BaseResourceComponent<DataType = any> {
       return;
     }
 
-    const id = this.getId(record);
+    const id = this.getRecordId(record);
     if (!id) {
       return;
     }
 
-    try {
-      await this.service.delete(id);
-    } catch (error) {
-      //  TODO: handle error
-      console.error(error);
-      return;
-    }
+    this.isDeleting.set(false);
 
-    this.deletePromptDialog.hide();
-    this.service.get();
+    const { response } = await this.service.delete(id);
+    if (response.ok) {
+      this.deletePromptDialog.hide();
+      this.service.get();
+    }
   }
 }
